@@ -1,12 +1,3 @@
-module toplevel (Clock_50, KEY, SW);
-    input Clock_50,
-    input [3:0] KEY,
-    input [9:0] SW,
-
-    part2 u1 (.iClock(Clock_50), .iResetn(KEY[0]), .iPlotBox(KEY[1]), .iBlack(KEY[2]), .iLoadX(KEY[3]), .iXY_Coord([6:0]SW), .iColour([9:7]SW));
-
-endmodule
-
 module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColour,oPlot,oDone);
    parameter X_SCREEN_PIXELS = 8'd160;
    parameter Y_SCREEN_PIXELS = 7'd120;
