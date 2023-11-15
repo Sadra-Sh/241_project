@@ -1,3 +1,4 @@
+`timescale 1ns / 1ns
 module part1 (
 	address,
 	clock,
