@@ -12,31 +12,39 @@ module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColo
    output wire [2:0] oColour; // VGA pixel colour (0-7)
    output wire oPlot; // Pixel draw enable
    output wire oDone; // goes high when finished drawing frame
+   wire lx, ly, lc;
+   wire [7:0] counterx, countery;
    
-
    control c0(
    .clk(iClock),
    .reset(iResetn),
    .load_x(iLoadX),
    .iplot(iPlotBox),
    .black(iBlack),
-   .counterx(),
-   .countery(),
-   .lx(),
-   .ly(),
-   .lc()  
+   .counterx(counterx),
+   .countery(countery),
+   .oplot(oPlot),
+   .odone(oDone),
+   .lx(lx),
+   .ly(ly),
+   .lc(lc)  
    );
 
    datapath d0(
    .clk(clock),
-   .reset(iResetn)
-   .lx(),
-   .ly(),
-   .lc(),
+   .reset(iResetn),
+   .lx(lx),
+   .ly(ly),
+   .lc(lc),
+   .plot(iPlotBox),
    .black(iBlack),
    .xycoord(iXY_Coord),
    .color(iColour),
-
+   .xout(oX),
+   .yout(oY),
+   .cout(oColour),
+   .counterx(counterx),
+   .countery(countery)
    );
    //
    // Your code goes here
@@ -47,7 +55,8 @@ module control (
 input clk, reset,
 input load_x,
 input iplot, black, 
-input [7:0] counterx, counter y,
+input [7:0] counterx, countery,
+output reg oplot, odone,
 output reg lx, ly, lc
 );
 reg [3:0] current_state, next_state;
@@ -59,7 +68,7 @@ draw = 3'd4,
 done = 3'd5,
 clear_wait = 3'd6, 
 clear = 3'd7;
-always (@*)
+always @(*)
 begin
    case (current_state)
       set_x_wait : 
@@ -86,7 +95,7 @@ begin
       clear:
       begin
          if (counterx == 8'd159 && countery == 8'd119)
-            next_state = set_x_wait;
+            next_state = done;
          else 
             next_state = clear;
       end
@@ -96,14 +105,16 @@ end
 
 always @(posedge clk)
 begin
-   current_state <= next_state;
    case (current_state)
       set_x:
       begin
          lx = 1'b1;
+         ly = 1'b0;
+         lc = 1'b0;
       end
       set_y:
       begin
+         lx = 1'b0;
          ly = 1'b1;
          lc = 1'b1;
       end
@@ -111,41 +122,49 @@ begin
       begin
          lx = 1'b0;
          ly = 1'b0;
-         1c = 1'b0;
+         lc = 1'b0;
+         oplot = 1'b1;
+         odone = 1'b0;
       end
       done:
       begin
          lx = 1'b0;
          ly = 1'b0;
          lc = 1'b0;
+         odone = 1'b1;
+      end
+      clear:
+      begin
+         odone = 1'b0;
+         oplot = 1'b1;
       end
    endcase
 end
 always@(posedge clk)
 begin 
-   if(reset)
+   if(!reset)
       current_state <= set_x_wait;
    else
       current_state <= next_state;
 end // state_FFS
 endmodule
 
-module datapath (
+module datapath(
    input clk, reset,
    input lx, ly, lc,
    input plot, black,
-   input [6:0] xycoord;
+   input [6:0] xycoord,
    input [2:0] color,
    output reg [7:0] xout,
    output reg [6:0] yout,
-   output reg [2:0] cout
-   output reg reg [7:0] counterx , countery
+   output reg [2:0] cout,
+   output reg [7:0] counterx, countery
 );
 reg [7:0] xpoint;
 reg [6:0] ypoint;
 always @(posedge clk)
 begin
-   if (reset) 
+   if (!reset) 
    begin
       xout <= 8'b0;
       yout <= 7'b0;
@@ -177,19 +196,19 @@ begin
   begin
    if (plot) 
    begin
-      if (!resetn) 
+      if (!reset) 
       begin
       xout <= 8'b0;
       yout <= 8'b0;
-      counterX <= 8'b0;
-      counterY <= 8'b0;
+      counterx <= 8'b0;
+      countery <= 8'b0;
       cout <= 3'b0;
       end
       else
       begin
          xout <= xpoint + counterx;
          yout <= ypoint + countery;
-         cout <= regcolour;
+         cout <= color;
          counterx <= counterx + 1'b1;
          countery <= countery + 1'b1;
       end
