@@ -1,12 +1,3 @@
-module toplevel (Clock_50, KEY, SW);
-    input Clock_50,
-    input [3:0] KEY,
-    input [9:0] SW,
-
-    part2 u1 (.iClock(Clock_50), .iResetn(KEY[0]), .iPlotBox(KEY[1]), .iBlack(KEY[2]), .iLoadX(KEY[3]), .iXY_Coord([6:0]SW), .iColour([9:7]SW));
-
-endmodule
-
 module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColour,oPlot,oDone);
    parameter X_SCREEN_PIXELS = 8'd160;
    parameter Y_SCREEN_PIXELS = 7'd120;
@@ -21,8 +12,9 @@ module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColo
    output wire [2:0] oColour; // VGA pixel colour (0-7)
    output wire oPlot; // Pixel draw enable
    output wire oDone; // goes high when finished drawing frame
-   wire lx, ly, lc;
-   wire [7:0] counterx, countery;
+   wire lx, ly, lc, increment;
+   wire [7:0] countx, county;
+
    
    control c0(
    .clk(iClock),
@@ -30,30 +22,33 @@ module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColo
    .load_x(iLoadX),
    .iplot(iPlotBox),
    .black(iBlack),
-   .counterx(counterx),
-   .countery(countery),
+   .counterx(countx),
+   .countery(county),
    .oplot(oPlot),
    .odone(oDone),
    .lx(lx),
    .ly(ly),
-   .lc(lc)  
+   .lc(lc),
+   .inc(increment)  
    );
 
    datapath d0(
-   .clk(clock),
+   .clk(iClock),
    .reset(iResetn),
    .lx(lx),
    .ly(ly),
    .lc(lc),
-   .plot(iPlotBox),
+   .inc(increment),
+   .done(oDone),
+   .plot(oPlot),
    .black(iBlack),
    .xycoord(iXY_Coord),
    .color(iColour),
    .xout(oX),
    .yout(oY),
    .cout(oColour),
-   .counterx(counterx),
-   .countery(countery)
+   .counterx(countx),
+   .countery(county)
    );
    //
    // Your code goes here
@@ -66,7 +61,7 @@ input load_x,
 input iplot, black, 
 input [7:0] counterx, countery,
 output reg oplot, odone,
-output reg lx, ly, lc
+output reg lx, ly, lc, inc
 );
 reg [3:0] current_state, next_state;
 localparam set_x_wait = 3'd0,
@@ -94,8 +89,12 @@ begin
       set_y : next_state = iplot ? set_y : draw;
       draw:
       begin
-         if (counterx == 8'd3 && countery == 8'd3)
-         next_state = done;
+         if (countery == 8'd4)
+         begin
+            next_state = done;
+            oplot = 1'b0;
+            current_state <= next_state;
+         end
          else
          next_state = draw;
       end
@@ -103,8 +102,12 @@ begin
       clear_wait: next_state = black ? clear_wait : clear;
       clear:
       begin
-         if (counterx == 8'd159 && countery == 8'd119)
+         if (countery == 8'd120)
+         begin
             next_state = done;
+            oplot = 1'b0;
+            current_state <= next_state;
+         end
          else 
             next_state = clear;
       end
@@ -114,38 +117,40 @@ end
 
 always @(posedge clk)
 begin
+lx = 1'b0;
+ly = 1'b0;
+lc = 1'b0;
+inc = 1'b0;
+oplot = 1'b0;
+odone = 1'b0;
    case (current_state)
       set_x:
       begin
          lx = 1'b1;
-         ly = 1'b0;
-         lc = 1'b0;
       end
       set_y:
       begin
-         lx = 1'b0;
          ly = 1'b1;
          lc = 1'b1;
       end
       draw:
       begin
-         lx = 1'b0;
-         ly = 1'b0;
-         lc = 1'b0;
          oplot = 1'b1;
          odone = 1'b0;
+         if (counterx == 8'd2)
+         inc = 1'b1;
       end
       done:
       begin
-         lx = 1'b0;
-         ly = 1'b0;
-         lc = 1'b0;
          odone = 1'b1;
+         oplot = 1'b0;
       end
       clear:
       begin
          odone = 1'b0;
          oplot = 1'b1;
+         if (counterx == 8'd159)
+         inc = 1'b1;
       end
    endcase
 end
@@ -160,7 +165,7 @@ endmodule
 
 module datapath(
    input clk, reset,
-   input lx, ly, lc,
+   input lx, ly, lc, inc, done,
    input plot, black,
    input [6:0] xycoord,
    input [2:0] color,
@@ -178,6 +183,8 @@ begin
       xout <= 8'b0;
       yout <= 7'b0;
       cout <= 3'b0;
+      counterx <= 8'b0;
+      countery <= 8'b0;
    end
    else
    begin
@@ -187,46 +194,37 @@ begin
       ypoint <= xycoord;
       if (lc)
       cout <= color;
+      if (plot)
+      begin
+         if (inc)
+         begin
+            countery <= countery + 1'b1;
+            counterx <= 8'b0;
+         end
+         else
+         counterx <= counterx + 1'b1;
+      end
+      if (done)
+      begin
+         countery <= 8'b0;
+         counterx <= 8'b0;
+      end
    end
 end
 
-always @(posedge clk)
+always @(*)
 begin
   if (black) 
   begin
-   counterx <= counterx + 1'b1;
-   countery <= countery + 1'b1;
-   xout <= counterx;
-   yout <= countery;
+   xout <= xpoint + counterx;
+   yout <= ypoint + countery;
    cout <= 3'b0;
   end
-
-  else 
-  begin
-   if (plot) 
+  if (plot) 
    begin
-      if (!reset) 
-      begin
-      xout <= 8'b0;
-      yout <= 8'b0;
-      counterx <= 8'b0;
-      countery <= 8'b0;
-      cout <= 3'b0;
-      end
-      else
-      begin
-         xout <= xpoint + counterx;
-         yout <= ypoint + countery;
-         cout <= color;
-         counterx <= counterx + 1'b1;
-         countery <= countery + 1'b1;
-      end
+      xout <= xpoint + counterx;
+      yout <= ypoint + countery;
+      cout <= color;
    end
-   else
-   begin
-      xout <= xout;
-      yout <= yout;
-   end
-  end
 end
 endmodule
