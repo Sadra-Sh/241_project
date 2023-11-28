@@ -142,7 +142,14 @@ case (current_state)
     end
     SET_RESET_SIGNAL = resetsignal = 1'b1;
 endcase
+end
 
+always @(posedge clock)
+begin
+    if (reset)
+        current_state <= SET_RESET_SIGNAL;
+    else
+        current_state <= next_state;
 end
 
 module datapath ()
