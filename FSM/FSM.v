@@ -18,7 +18,6 @@ output reg draw_car,
 output reg draw_win,  
 output reg draw_menu, 
 output reg drive,
-output reg plot,
 output reg resetsignal,
 output reg clear
 )
@@ -84,7 +83,14 @@ begin
     WAIT_RIGHT = next_state = right ? WAIT_RIGHT : WAIT_MOVE;
 
     DRAW_WIN:
-
+    begin
+        if (done_win)
+        begin
+            if (start) next_state = DRAW_WIN;
+            else next_state = SET_RESET_SIGNAL;
+        end
+        else next_state = DRAW_WIN;
+    end
     MOVE_CAR:
     begin
         if (done_clear)
@@ -96,12 +102,48 @@ begin
         end
         else next_state = MOVE_CAR;
     end
-        
+    SET_RESET_SIGNAL: next_state = draw_menu;
 
     endcase
 end
 
 endmodule
+
+always @(*)
+begin
+    start_race = 1'b0; 
+    draw_bg = 1'b0; 
+    draw_car = 1'b0; 
+    draw_win = 1'b0;  
+    draw_menu = 1'b0; 
+    drive = 1'b0;
+    resetsignal = 1'b0;
+    clear = 1'b0;
+
+case (current_state)
+    DRAW_MENU: 
+    begin
+        draw_menu = 1'b1;
+    end
+    DRAW_BG: 
+    begin
+        draw_bg = 1'b1;
+    end
+    DRAW_CAR:
+    begin
+        if (done_car)
+            draw_car = 1'b0;
+        else
+            draw_car = 1'b1;
+    end
+    MOVE_CAR:
+    begin
+        if (clear)
+    end
+    SET_RESET_SIGNAL = resetsignal = 1'b1;
+endcase
+
+end
 
 module datapath ()
 
