@@ -9,7 +9,7 @@ input oneframe,
 input done_bg,
 input done_car, 
 input done_race,
-input done_clear
+input done_erase
 output reg start_race, 
 output reg draw_bg, 
 output reg draw_car, 
@@ -29,7 +29,7 @@ LEFT = 4'd5,
 WAIT_LEFT = 4'd6,
 RIGHT = 4'd7,
 WAIT_RIGHT = 4'd8,
-DRAW_OVER_CAR = 4'd9,
+ERASE_CAR = 4'd9,
 SET_RESET_SIGNAL = 4'd10;
 
 always@ (*)
@@ -43,7 +43,7 @@ begin
         if (done_car)
         begin
             if (!start) next_state = SET_RESET_SIGNAL;
-            else if (straight == 1'b1 && oneframe) next_state = MOVE_CAR;
+            else if (straight == 1'b1 && oneframe) next_state = ERASE_CAR;
             else if (left == 1'b1) next_state = WAIT_LEFT;
             else if (right == 1'b1) next_state = WAIT_RIGHT;
             else next_state = WAIT_MOVE;
@@ -52,8 +52,8 @@ begin
     end
     WAIT_MOVE:
     begin
-        if (forward == 1'b1 && oneframe) next_state = MOVE_CAR;
-        else if (left == 1'b1 || right == 1'b1) next_state = MOVE_CAR;
+        if (forward == 1'b1 && oneframe) next_state = ERASE_CAR;
+        else if (left == 1'b1 || right == 1'b1) next_state = ERASE_CAR;
         else next_state = WAIT_MOVE;
     end
     STRAIGHT: next_state = DRAW_CAR;
@@ -66,16 +66,16 @@ begin
 
     WAIT_RIGHT = next_state = right ? WAIT_RIGHT : WAIT_MOVE;
 
-    MOVE_CAR:
+    ERASE_CAR:
     begin
-        if (done_clear)
+        if (done_erase)
         begin
             if (forward == 1'b1) next_state = STRAIGHT;
             else if (left == 1'b1) next_state = LEFT;
             else if (right == 1'b1) next_state = RIGHT;
             else next_state = DRAW_CAR;
         end
-        else next_state = MOVE_CAR;
+        else next_state = ERASE_CAR;
     end
     SET_RESET_SIGNAL: next_state = draw_menu;
 
@@ -105,7 +105,7 @@ case (current_state)
         else
             draw_car = 1'b1;
     end
-    MOVE_CAR:
+    ERASE_CAR:
     begin
         if (clear)
     end
