@@ -70,9 +70,9 @@ reg			[7:0]	last_data_received;
 
 always @(posedge CLOCK_50)
 begin
-	if (KEY[0] == 1'b0)
+	if (KEY[0] == 1'b0) //reset is pressed delete all previous datas to remove hex display
 		last_data_received <= 8'h00;
-	else if (ps2_key_pressed == 1'b1)
+	else if (ps2_key_pressed == 1'b1) // start taking data when key is pressed
 		last_data_received <= ps2_key_data;
 end
 
@@ -115,7 +115,7 @@ Hexadecimal_To_Seven_Segment Segment0 (
 	.seven_seg_display	(HEX0)
 );
 
-Hexadecimal_To_Seven_Segment Segment1 (
+Hexadecimal_To_Seven_Segment Segment1 ( //only displays on hex 1 and 0
 	// Inputs
 	.hex_number			(last_data_received[7:4]),
 
