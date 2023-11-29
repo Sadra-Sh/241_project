@@ -2,24 +2,22 @@ module control (
 input clock,
 input reset,
 input start,
-input straight, 
-input right,
-input left,
-input oneframe, 
+//straight, left, right
 input [7:0] counterx, countery,
 output reg draw_bg_black,
 output reg draw_bg_green_left,
 output reg draw_bg_green_right, 
 output reg draw_car, update_car 
 output reg erase, inc
-)
+output reg done_bg, done_erase, done_car, done_update,
+);
 reg [3:0] current_state, next_state;
 
-localparam START_RACE = 4'd0, 
+localparam DRAW_BG_GREEN_LEFT = 4'd0, 
 DRAW_BG_BLACK = 4'd1,
-DRAW_BG_GREEN_LEFT = 4'd2,
-DRAW_BG_GREEN_RIGHT = 4'd3
-DRAW_CAR = 4'd4,
+DRAW_BG_GREEN_RIGHT = 4'd2,
+DRAW_CAR = 4'd3,
+START_RACE = 4'd4,
 WAIT_MOVE = 4'd5,
 STRAIGHT = 4'd6,
 LEFT = 4'd7,
@@ -30,8 +28,6 @@ UPDATE_CAR = 4'd10;
 always@ (*)
 begin
     case (current_state)
-
-    START_RACE: next_state = start ? DRAW_BG_GREEN_LEFT : START_RACE;
     DRAW_BG_GREEN_LEFT:
     begin
         if (countery == 8'd120)
@@ -46,21 +42,25 @@ begin
         else
             next_state = DRAW_BG_BLACK;
     end
-
     DRAW_BG_GREEN_RIGHT:
     begin
         if (countery == 8'd120)
+        begin
             next_state = DRAW_CAR;
+        end
         else
             next_state = DRAW_BG_GREEN_RIGHT;
     end
     DRAW_CAR:
     begin
         if (countery == 8'd12)
-            next_state = WAIT_MOVE;
+        begin
+            next_state = START_RACE;
+        end
         else
             next_state = DRAW_CAR;
     end
+    START_RACE: next_state = start ? WAIT_MOVE : START_RACE;
     WAIT_MOVE:
     begin
         if (straight) 
@@ -76,19 +76,27 @@ begin
 
     LEFT: next_state = ERASE_CAR;
 
-    RIGHT = next_state = ERASE_CAR_CAR;
+    RIGHT = next_state = ERASE_CAR;
 
     ERASE_CAR:
     begin
-        if (counterغ == 8'd120)
-            next_state = UPDATE_CAR
+        if (countery == 8'd120)
+        begin
+            next_state = UPDATE_CAR;
+        end
+        else 
+            next_state = ERASE_CAR;
     end
     UPDATE_CAR:
     begin
-        if (counterغ == 8'd12)
+        if (countery = 8'd12)
+        begin
             next_state = WAIT_MOVE;
+        end
+        else 
+            next_state = UPDATE_CAR;
     end
-    default: next_state = START_RACE;
+    default: next_state = DRAW_BG_GREEN_LEFT;
 
     endcase
 end
@@ -103,6 +111,10 @@ begin
     draw_car = 1'b0; 
     erase = 1'b0;
     inc = 1'b0;
+    done_bg = 1'b0;
+    done_car = 1'b0;
+    done_erase = 1'b0;
+    done_update = 1'b0;
 
 case (current_state)
     DRAW_BG_BLACK: 
@@ -125,23 +137,30 @@ case (current_state)
     end
     DRAW_CAR:
     begin
+        done_bg = 1'b1;
         draw_car = 1'b1;
         if (counterx == 8'd4)
             inc = 1'b1;
     end
+    WAIT_MOVE:
+    begin
+        done_car = 1'b1;
+    end
     ERASE_CAR:
     begin
+        done_erase = 1'b1;
         erase = 1'b1;
         if (counterx == 8'd100)
             inc = 1'b1;
     end
     UPDATE_CAR:
     begin
+        done_update = 1'b1;
         update_car = 1'b1;
         if (counterx == 8'd4)
             inc = 1'b1;
     end
-    default: next_state = START_RACE;
+    default: next_state = DRAW_BG_GREEN_LEFT;
 endcase
 end
 
