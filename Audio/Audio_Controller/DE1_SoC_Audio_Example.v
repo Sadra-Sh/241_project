@@ -63,7 +63,8 @@ wire				audio_out_allowed;
 wire		[31:0]	left_channel_audio_out;
 wire		[31:0]	right_channel_audio_out;
 wire				write_audio_out;
-wire [3:0] mif_audio_wire;
+reg [3:0] mif_audio_wire;
+wire delay_clock;
 
 // Internal Registers
 
@@ -83,6 +84,7 @@ reg snd;
  *                             Sequential Logic                              *
  *****************************************************************************/
 
+rateDivider rate_divider (.clock(CLOCK_50), .reset(~KEY[0]), .speed())
 
 always @(posedge CLOCK_50)
 	if(delay_cnt == delay) begin # 
@@ -94,7 +96,7 @@ reg [2:0] mif_data [0:1023];
 reg [2:0] mif_adder;
 
 initial begin
-	$readmemb (W:\\241_project\\241-project\\Audio\\test.mif, mif_data);
+	$readmemb ("W:\\241_project\\241-project\\Audio\\test.mif", mif_data);
  end
 
 always @(posedge CLOCK_50)begin 
@@ -167,7 +169,35 @@ avconf #(.USE_MIC_INPUT(1)) avc (
 endmodule
 
 module rateDivider (
-	input [19:0] counter,
-	output
+	input clock,
+	input reset,
+	input [1:0] speed,
+	output out_clock,
 )
 
+	reg [$clog2(CLOCK_FREQUENCY*4)-1, 0] downcount;
+
+	always @(posedge clock) begin
+		if (reset || downcount == 28'd0) 
+		begin	
+			if (speed == 2'b00)
+				donwcount = 27'd0; //default: every 50MHz
+			if (speed == 2'b01)
+				downcount = CLOCK_FREQUENCY - 1; //every 1 second
+			if (speed == 2'b10)
+				donwcount = (CLOCK_FREQUENCY*0.5) - 1 //every 1/2 seconds
+			if (speed == 2'b11)
+				downcoutn = (CLOCK_FREQUENCY*0.1) - 1 //every 1/10 seconds
+		
+		end
+		else begin
+			if (speed == 2'b00)
+				downcount <= downcount +1;
+			else 
+				downcount <= downcoutn -1;
+		end
+	end
+
+	assign out_clock = (downcount = 0) ? 1b'1:1b'0;
+
+endmodule
