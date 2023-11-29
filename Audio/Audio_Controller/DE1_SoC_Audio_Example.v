@@ -4,7 +4,7 @@ module DE1_SoC_Audio_Example (
 	CLOCK_50,
 	KEY,
 
-	AUD_ADCDAT,
+	mif_audio_data,
 
 	// Bidirectionals
 	AUD_BCLK,
@@ -30,24 +30,25 @@ module DE1_SoC_Audio_Example (
  *                             Port Declarations                             *
  *****************************************************************************/
 // Inputs
-input				CLOCK_50;
-input		[3:0]	KEY;
-input		[3:0]	SW;
+input				CLOCK_50; /* 50 M hz clock serviing as the reference clock for the entire system */
+input		[3:0]	KEY; /* input press keys and swtiches*/
+input		[3:0]	SW; 
 
-input				AUD_ADCDAT;
+input				AUD_ADCDAT; /* input carrying audio data form an analog to digital converter carrying the digitized audio signals */
+input [3:0] mif_audio_data;
 
 // Bidirectionals
-inout				AUD_BCLK;
-inout				AUD_ADCLRCK;
-inout				AUD_DACLRCK;
+inout				AUD_BCLK; /* audio bit clock - clock for audio data transmission used to synchronize the sending receiving of data*/ 
+inout				AUD_ADCLRCK; /* audio left/right channel clock - helps with synchornization between the 2 channels */
+inout				AUD_DACLRCK;  
 
-inout				FPGA_I2C_SDAT;
+inout				FPGA_I2C_SDAT; /* I2C dataline - tansfering data between the FPGA and the speakers */
 
 // Outputs
-output				AUD_XCK;
-output				AUD_DACDAT;
+output				AUD_XCK; /* audio tansmit clock - */
+output				AUD_DACDAT; /* audio DAC clock - carrying data to digital to analog converter */
 
-output				FPGA_I2C_SCLK;
+output				FPGA_I2C_SCLK; /* the output clock signal for the I2C communication */
 
 /*****************************************************************************
  *                 Internal Wires and Registers Declarations                 *
@@ -62,6 +63,7 @@ wire				audio_out_allowed;
 wire		[31:0]	left_channel_audio_out;
 wire		[31:0]	right_channel_audio_out;
 wire				write_audio_out;
+wire [3:0] mif_audio_wire;
 
 // Internal Registers
 
@@ -81,24 +83,40 @@ reg snd;
  *                             Sequential Logic                              *
  *****************************************************************************/
 
+
 always @(posedge CLOCK_50)
-	if(delay_cnt == delay) begin
+	if(delay_cnt == delay) begin # 
 		delay_cnt <= 0;
 		snd <= !snd;
-	end else delay_cnt <= delay_cnt + 1;
+	end  else delay_cnt <= delay_cnt + 1; 
+
+reg [2:0] mif_data [0:1023]; 
+reg [2:0] mif_adder;
+
+initial begin
+	$readmemb (W:\\241_project\\241-project\\Audio\\test.mif, mif_data);
+ end
+
+always @(posedge CLOCK_50)begin 
+	if (KEY[0]) mif_adder <= 0;
+	else begin
+		mif_adder <= mif_adder + 1;
+		mif_audio_wire <= mif_data[mif_adder];
+	end
+end 
 
 /*****************************************************************************
  *                            Combinational Logic                            *
  *****************************************************************************/
 
-assign delay = {SW[3:0], 15'd3000};
+assign delay = {mif_audio_wire[3:0], 15'd3000};
 
-wire [31:0] sound = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
+wire [31:0] sound = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
 
 
 assign read_audio_in			= audio_in_available & audio_out_allowed;
 
-assign left_channel_audio_out	= left_channel_audio_in+sound;
+assign left_channel_audio_out	= left_channel_audio_in+sound; 
 assign right_channel_audio_out	= right_channel_audio_in+sound;
 assign write_audio_out			= audio_in_available & audio_out_allowed;
 
@@ -119,7 +137,7 @@ Audio_Controller Audio_Controller (
 	.right_channel_audio_out	(right_channel_audio_out),
 	.write_audio_out			(write_audio_out),
 
-	.AUD_ADCDAT					(AUD_ADCDAT),
+	.AUD_ADCDAT					(mif_audio_data),
 
 	// Bidirectionals
 	.AUD_BCLK					(AUD_BCLK),
@@ -147,4 +165,9 @@ avconf #(.USE_MIC_INPUT(1)) avc (
 );
 
 endmodule
+
+module rateDivider (
+	input [19:0] counter,
+	output
+)
 
