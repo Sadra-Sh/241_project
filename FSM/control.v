@@ -43,7 +43,6 @@ begin
         if (done_car)
         begin
             if (!start) next_state = SET_RESET_SIGNAL;
-            else if (done_race) next_state = DRAW_WIN;
             else if (straight == 1'b1 && oneframe) next_state = MOVE_CAR;
             else if (left == 1'b1) next_state = WAIT_LEFT;
             else if (right == 1'b1) next_state = WAIT_RIGHT;
@@ -122,6 +121,3 @@ begin
         current_state <= next_state;
 end
 
-module datapath ()
-
-endmodule
