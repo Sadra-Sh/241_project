@@ -31,10 +31,10 @@ always@ (*)
 begin
     case (current_state)
 
-    START_RACE: next_state = DRAW_BG_GREEN_LEFT;
+    START_RACE: next_state = start ? DRAW_BG_GREEN_LEFT : START_RACE;
     DRAW_BG_GREEN_LEFT:
     begin
-        if (counterx == 8'd120)
+        if (countery == 8'd120)
             next_state = DRAW_BG_BLACK;
         else 
             next_state = DRAW_BG_GREEN_LEFT;
@@ -49,14 +49,14 @@ begin
 
     DRAW_BG_GREEN_RIGHT:
     begin
-        if (counterx == 8'd120)
+        if (countery == 8'd120)
             next_state = DRAW_CAR;
         else
             next_state = DRAW_BG_GREEN_RIGHT;
     end
     DRAW_CAR:
     begin
-        if (counterx == 8'd120)
+        if (countery == 8'd12)
             next_state = WAIT_MOVE;
         else
             next_state = DRAW_CAR;
@@ -80,12 +80,12 @@ begin
 
     ERASE_CAR:
     begin
-        if (counterx == 8'd120)
+        if (counterغ == 8'd120)
             next_state = UPDATE_CAR
     end
     UPDATE_CAR:
     begin
-        if (counterx == 8'd10)
+        if (counterغ == 8'd12)
             next_state = WAIT_MOVE;
     end
     default: next_state = START_RACE;
