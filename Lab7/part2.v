@@ -15,7 +15,6 @@ module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColo
    wire lx, ly, lc, increment;
    wire [7:0] countx, county;
 
-   
    control c0(
    .clk(iClock),
    .reset(iResetn),
@@ -29,7 +28,7 @@ module part2(iResetn,iPlotBox,iBlack,iColour,iLoadX,iXY_Coord,iClock,oX,oY,oColo
    .lx(lx),
    .ly(ly),
    .lc(lc),
-   .inc(increment)  
+   .inc(increment)
    );
 
    datapath d0(
@@ -63,6 +62,8 @@ input [7:0] counterx, countery,
 output reg oplot, odone,
 output reg lx, ly, lc, inc
 );
+parameter X_SCREEN_PIXELS = 8'd160;
+parameter Y_SCREEN_PIXELS = 8'd120;
 reg [3:0] current_state, next_state;
 localparam set_x_wait = 3'd0,
 set_x = 3'd1,
@@ -86,14 +87,23 @@ begin
       end   
       set_x : next_state = load_x ? set_x : set_y_wait;
       set_y_wait : next_state = iplot ? set_y : set_y_wait;
-      set_y : next_state = iplot ? set_y : draw;
+      set_y :
+      begin
+         if (iplot)
+            next_state = set_y;
+         else 
+         begin
+            next_state = draw;
+            lc = 1'b0;
+            ly = 1'b0;
+         end
+      end
       draw:
       begin
          if (countery == 8'd4)
          begin
             next_state = done;
             oplot = 1'b0;
-            current_state <= next_state;
          end
          else
          next_state = draw;
@@ -102,11 +112,10 @@ begin
       clear_wait: next_state = black ? clear_wait : clear;
       clear:
       begin
-         if (countery == 8'd120)
+         if (countery == Y_SCREEN_PIXELS)
          begin
             next_state = done;
             oplot = 1'b0;
-            current_state <= next_state;
          end
          else 
             next_state = clear;
@@ -115,7 +124,7 @@ begin
    endcase
 end
 
-always @(posedge clk)
+always @(*)
 begin
 lx = 1'b0;
 ly = 1'b0;
@@ -137,8 +146,10 @@ odone = 1'b0;
       begin
          oplot = 1'b1;
          odone = 1'b0;
-         if (counterx == 8'd2)
+         if (counterx == 8'd3)
          inc = 1'b1;
+         if (countery == 8'd4)
+         oplot = 1'b0;
       end
       done:
       begin
@@ -149,8 +160,10 @@ odone = 1'b0;
       begin
          odone = 1'b0;
          oplot = 1'b1;
-         if (counterx == 8'd159)
+         if (counterx == X_SCREEN_PIXELS-1)
          inc = 1'b1;
+         if (countery == Y_SCREEN_PIXELS)
+         oplot = 1'b0;
       end
    endcase
 end
@@ -176,6 +189,7 @@ module datapath(
 );
 reg [7:0] xpoint;
 reg [6:0] ypoint;
+reg [2:0] regcolor;
 always @(posedge clk)
 begin
    if (!reset) 
@@ -193,7 +207,7 @@ begin
       if (ly)
       ypoint <= xycoord;
       if (lc)
-      cout <= color;
+      regcolor <= color;
       if (plot)
       begin
          if (inc)
@@ -224,7 +238,7 @@ begin
    begin
       xout <= xpoint + counterx;
       yout <= ypoint + countery;
-      cout <= color;
+      cout <= regcolor;
    end
 end
 endmodule
