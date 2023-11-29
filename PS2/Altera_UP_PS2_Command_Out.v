@@ -96,7 +96,7 @@ parameter	PS2_STATE_0_IDLE					= 3'h0,
 reg			[3:0]	cur_bit;
 reg			[8:0]	ps2_command;
 
-reg			[NUMBER_OF_BITS_FOR_101US:1]	command_initiate_counter;
+reg			[NUMBER_OF_BITS_FOR_101US:1]	command_initiate_counter; // parameter used as num bits
 
 reg			[NUMBER_OF_BITS_FOR_15MS:1]		waiting_counter;
 reg			[NUMBER_OF_BITS_FOR_2MS:1]		transfer_counter;
@@ -112,21 +112,21 @@ reg			[2:0]	s_ps2_transmitter;
 always @(posedge clk)
 begin
 	if (reset == 1'b1)
-		s_ps2_transmitter <= PS2_STATE_0_IDLE;
+		s_ps2_transmitter <= PS2_STATE_0_IDLE; //ps2 transmmitter becomes ps2 state idle which is 3 hex 0
 	else
-		s_ps2_transmitter <= ns_ps2_transmitter;
+		s_ps2_transmitter <= ns_ps2_transmitter; // state transition
 end
 
 always @(*)
 begin
 	// Defaults
-	ns_ps2_transmitter = PS2_STATE_0_IDLE;
+	ns_ps2_transmitter = PS2_STATE_0_IDLE; //puts the transmitter to hex 0 
 
     case (s_ps2_transmitter)
 	PS2_STATE_0_IDLE:
 		begin
 			if (send_command == 1'b1)
-				ns_ps2_transmitter = PS2_STATE_1_INITIATE_COMMUNICATION;
+				ns_ps2_transmitter = PS2_STATE_1_INITIATE_COMMUNICATION; //
 			else
 				ns_ps2_transmitter = PS2_STATE_0_IDLE;
 		end
