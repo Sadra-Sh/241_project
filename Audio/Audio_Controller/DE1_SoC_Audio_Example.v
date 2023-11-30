@@ -4,7 +4,7 @@ module DE1_SoC_Audio_Example (
 	CLOCK_50,
 	KEY,
 
-	mif_audio_data,
+	AUD_ADCDAT,
 
 	// Bidirectionals
 	AUD_BCLK,
@@ -71,6 +71,10 @@ wire delay_clock;
 reg [18:0] delay_cnt;
 wire [18:0] delay;
 
+wire rate_divider_clock; // out of rate divider
+
+reg sound_enable <= 1; //enables the sound to be played
+
 reg snd;
 
 // State Machine Registers
@@ -84,20 +88,28 @@ reg snd;
  *                             Sequential Logic                              *
  *****************************************************************************/
 
-rateDivider rate_divider (.clock(CLOCK_50), .reset(~KEY[0]), .speed())
+rateDivider rate_divider (.clock(CLOCK_50), .reset(~KEY[0]), rate_divider_clock)
 
-always @(posedge CLOCK_50)
+always@(posedge rate_divider_clock) begin
+	mem_addr <= mem_addr + 1;
+	if(mem_addr == 4) begin
+		sound_enable <= 0;
+	end
+end
+
+always @(posedge CLOCK_50) begin
 	if(delay_cnt == delay) begin # 
 		delay_cnt <= 0;
 		snd <= !snd;
 	end  else delay_cnt <= delay_cnt + 1; 
+end
 
-reg [2:0] mif_data [0:1023]; 
-reg [2:0] mif_adder;
+reg [3:0] mif_data [0:3]; 
+reg [3:0] mif_adder;
 
 initial begin
-	$readmemb ("W:\\241_project\\241-project\\Audio\\test.mif", mif_data);
- end
+	$readmemb ("test.mif", mif_data);
+end
 
 always @(posedge CLOCK_50)begin 
 	if (KEY[0]) mif_adder <= 0;
@@ -113,7 +125,7 @@ end
 
 assign delay = {mif_audio_wire[3:0], 15'd3000};
 
-wire [31:0] sound = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
+wire [31:0] sound = (!snd_enable || SW==0) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
 
 
 assign read_audio_in			= audio_in_available & audio_out_allowed;
@@ -171,30 +183,16 @@ endmodule
 module rateDivider (
 	input clock,
 	input reset,
-	input [1:0] speed,
 	output out_clock,
 )
-
 	reg [$clog2(CLOCK_FREQUENCY*4)-1, 0] downcount;
 
 	always @(posedge clock) begin
 		if (reset || downcount == 28'd0) 
-		begin	
-			if (speed == 2'b00)
-				donwcount = 27'd0; //default: every 50MHz
-			if (speed == 2'b01)
-				downcount = CLOCK_FREQUENCY - 1; //every 1 second
-			if (speed == 2'b10)
-				donwcount = (CLOCK_FREQUENCY*0.5) - 1 //every 1/2 seconds
-			if (speed == 2'b11)
-				downcoutn = (CLOCK_FREQUENCY*0.1) - 1 //every 1/10 seconds
-		
-		end
+			downcount = (CLOCK_FREQUENCY*0.1) - 1 //every 1/10 seconds
+
 		else begin
-			if (speed == 2'b00)
-				downcount <= downcount +1;
-			else 
-				downcount <= downcoutn -1;
+			downcount <= downcount -1;
 		end
 	end
 
