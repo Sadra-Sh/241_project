@@ -8,8 +8,8 @@ output reg draw_bg_black,
 output reg draw_bg_green_left,
 output reg draw_bg_green_right, 
 output reg draw_car, update_car 
-output reg erase, inc
-output reg done_bg, done_erase, done_car, done_update,
+output reg erase, inc,
+output reg done, plot,
 );
 reg [3:0] current_state, next_state;
 
@@ -23,7 +23,11 @@ STRAIGHT = 4'd6,
 LEFT = 4'd7,
 RIGHT = 4'd8,
 ERASE_CAR = 4'd9,
-UPDATE_CAR = 4'd10;
+UPDATE_CAR = 4'd10,
+DONE_CAR = 4'd11,
+DONE_BG = 4'd12,
+DONE_ERASE = 4'd13,
+DONE_UPDATE = 4'd14;
 
 always@ (*)
 begin
@@ -46,20 +50,22 @@ begin
     begin
         if (countery == 8'd120)
         begin
-            next_state = DRAW_CAR;
+            next_state = DONE_BG;
         end
         else
             next_state = DRAW_BG_GREEN_RIGHT;
     end
+    DONE_BG: next_state = DRAW_CAR;
     DRAW_CAR:
     begin
         if (countery == 8'd12)
         begin
-            next_state = START_RACE;
+            next_state = DONE_CAR;
         end
         else
             next_state = DRAW_CAR;
     end
+    DONE_CAR: next_state = START_RACE;
     START_RACE: next_state = start ? WAIT_MOVE : START_RACE;
     WAIT_MOVE:
     begin
@@ -76,26 +82,30 @@ begin
 
     LEFT: next_state = ERASE_CAR;
 
-    RIGHT = next_state = ERASE_CAR;
+    RIGHT: next_state = ERASE_CAR;
 
     ERASE_CAR:
     begin
         if (countery == 8'd120)
         begin
-            next_state = UPDATE_CAR;
+            next_state = DONE_ERASE;
         end
         else 
             next_state = ERASE_CAR;
     end
+    DONE_ERASE: next_state = UPDATE_CAR;
+
     UPDATE_CAR:
     begin
-        if (countery = 8'd12)
+        if (countery == 8'd12)
         begin
-            next_state = WAIT_MOVE;
+            next_state = DONE_UPDATE;
         end
         else 
             next_state = UPDATE_CAR;
     end
+
+    DONE_UPDATE: next_state = WAIT_MOVE;
     default: next_state = DRAW_BG_GREEN_LEFT;
 
     endcase
@@ -111,54 +121,76 @@ begin
     draw_car = 1'b0; 
     erase = 1'b0;
     inc = 1'b0;
-    done_bg = 1'b0;
-    done_car = 1'b0;
-    done_erase = 1'b0;
-    done_update = 1'b0;
+    done = 1'b0;
 
 case (current_state)
     DRAW_BG_BLACK: 
     begin
+        plot = 1'b1;
+        done = 1'b0;
         draw_bg_black = 1'b1;
-        if (counterx == 8'd100)
+        if (counterx == 8'd130)
             inc = 1'b1;
     end
     DRAW_BG_GREEN_LEFT:
     begin
+        plot = 1'b1;
+        done = 1'b0;
         draw_bg_green_left = 1'b1;
         if (counterx == 8'd30)
             inc = 1'b1;
     end
     DRAW_BG_GREEN_RIGHT:
     begin
+        plot = 1'b1;
+        done = 1'b0;
         draw_bg_green_right = 1'b1;
-        if (counterx == 8'd30)
+        if (counterx == 8'd160)
             inc = 1'b1;
+    end
+    DONE_BG:
+    begin
+        plot = 1'b0;
+        done = 1'b1;
     end
     DRAW_CAR:
     begin
-        done_bg = 1'b1;
+        plot = 1'b1;
+        done = 1'b0;
         draw_car = 1'b1;
         if (counterx == 8'd4)
             inc = 1'b1;
     end
-    WAIT_MOVE:
+    DONE_CAR:
     begin
-        done_car = 1'b1;
+        plot = 1'b0;
+        done = 1'b1;
     end
     ERASE_CAR:
     begin
-        done_erase = 1'b1;
+        plot = 1'b1;
+        done = 1'b0;
         erase = 1'b1;
         if (counterx == 8'd100)
             inc = 1'b1;
     end
+    DONE_ERASE:
+    begin
+        plot = 1'b0;
+        done = 1'b1;
+    end
     UPDATE_CAR:
     begin
-        done_update = 1'b1;
+        plot = 1'b1;
+        done = 1'b0;
         update_car = 1'b1;
         if (counterx == 8'd4)
             inc = 1'b1;
+    end
+    DONE_UPDATE:
+    begin
+        plot = 1'b0;
+        done = 1'b1;
     end
     default: next_state = DRAW_BG_GREEN_LEFT;
 endcase

@@ -1,12 +1,12 @@
 module datapath (
 input clock, reset,
 input draw_bg_black, draw_bg_green_left, draw_bg_green_right, 
-input draw_car, erase, plot,
-input done_bg, done_car, done_erase, done_update, 
-output reg [7:0] xcounter, ycounter, xout, yout,
+input draw_car, erase, update,
+input done, plot, 
+output reg [7:0] counterx, countery, xout, yout,
 output reg [2:0] cout,
 );
-reg [2:0] regcolor;
+
 always @(posedge clk)
 begin
    if (reset) 
@@ -17,16 +17,20 @@ begin
       counterx <= 8'b0;
       countery <= 8'b0;
    end
+
    else
    begin
-    if (inc)
+    if (plot)
     begin
-        countery <= countery + 1'b1;
-        counterx <= 8'b0;
-    end
-    else
+        if (inc)
+        begin
+            countery <= countery + 1'b1;
+            counterx <= 8'b0;
+        end
+        else
         counterx <= counterx + 1'b1;
-    if (done_bg || done_car || done_erase || done_update)
+    end
+    if (done)
       begin
          countery <= 8'b0;
          counterx <= 8'b0;
@@ -39,7 +43,7 @@ always @(*)
 begin
   if (draw_bg_black) 
   begin
-   xout <= 8'd30 + counterx;
+   xout <= 8'd0 + counterx;
    yout <= 8'd0 + countery;
    cout <= 3'b0;
   end
@@ -51,8 +55,9 @@ begin
   end
   else if (draw_bg_green_right)
   begin
-    xout <= 8'd130 + counterx;
+    xout <= 8'd0 + counterx;
     yout <= 8'd0 + countery;
+    cout <= 3'b010;
   end
   else if (draw_car) 
    begin
