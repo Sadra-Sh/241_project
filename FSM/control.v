@@ -19,9 +19,9 @@ DRAW_BG_GREEN_RIGHT = 4'd2,
 DRAW_CAR = 4'd3,
 START_RACE = 4'd4,
 WAIT_MOVE = 4'd5,
-STRAIGHT = 4'd6,
-LEFT = 4'd7,
-RIGHT = 4'd8,
+//STRAIGHT = 4'd6,
+//LEFT = 4'd7,
+//RIGHT = 4'd8,
 ERASE_CAR = 4'd9,
 UPDATE_CAR = 4'd10,
 DONE_CAR = 4'd11,
@@ -67,22 +67,22 @@ begin
     end
     DONE_CAR: next_state = START_RACE;
     START_RACE: next_state = start ? WAIT_MOVE : START_RACE;
-    WAIT_MOVE:
-    begin
-        if (straight) 
-            next_state = STRAIGHT;
-        else if (left)
-            next_state = LEFT;
-        else if (right)
-            next_state = RIGHT;
-        else
-            next_state = WAIT_MOVE;
-    end
-    STRAIGHT: next_state = ERASE_CAR;
+    //WAIT_MOVE:
+    //begin
+        //if (straight) 
+            //next_state = STRAIGHT;
+        //else if (left)
+            //next_state = LEFT;
+        //else if (right)
+            //next_state = RIGHT;
+        //else
+            //next_state = WAIT_MOVE;
+    //end
+    //STRAIGHT: next_state = ERASE_CAR;
 
-    LEFT: next_state = ERASE_CAR;
+    //LEFT: next_state = ERASE_CAR;
 
-    RIGHT: next_state = ERASE_CAR;
+    //RIGHT: next_state = ERASE_CAR;
 
     ERASE_CAR:
     begin
@@ -122,7 +122,8 @@ begin
     erase = 1'b0;
     inc = 1'b0;
     done = 1'b0;
-
+    update_car = 1'b0;
+    plot = 1'b0;
 case (current_state)
     DRAW_BG_BLACK: 
     begin
