@@ -41,6 +41,17 @@ module fill
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
 	// image file (.MIF) for the controller.
+    toplevel t1(
+        .iResetn(KEY[0]),
+        .iClock(CLOCK_50),
+        .oX(x),
+        .oY(y),
+        .oColour(colour),
+        .start(KEY[1]),
+        .done(),
+        .plot(plot),
+    );
+	
 	vga_adapter VGA(
 			.resetn(resetn),
 			.clock(CLOCK_50),
