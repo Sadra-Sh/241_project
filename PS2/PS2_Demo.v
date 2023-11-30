@@ -33,8 +33,8 @@ input				CLOCK_50;
 input		[3:0]	KEY;
 
 // Bidirectionals
-inout				PS2_CLK;
-inout				PS2_DAT;
+inout				PS2_CLK; // bidirectional signal for PS2 clock
+inout				PS2_DAT; // signal for ps2 data communication
 
 // Outputs
 output		[6:0]	HEX0;
@@ -51,11 +51,11 @@ output		[6:0]	HEX7;
  *****************************************************************************/
 
 // Internal Wires
-wire		[7:0]	ps2_key_data;
-wire				ps2_key_pressed;
+wire		[7:0]	ps2_key_data; // 8 bits indicating the keyboard data
+wire				ps2_key_pressed; // 1 bit singal indicating that a singal was pressed
 
 // Internal Registers
-reg			[7:0]	last_data_received;
+reg			[7:0]	last_data_received; //sotes the data that was last received 
 
 // State Machine Registers
 
