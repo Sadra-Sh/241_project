@@ -91,7 +91,7 @@ assign HEX7 = 7'h7F;
  *                              Internal Modules                             *
  *****************************************************************************/
 
-PS2_Controller PS2 (
+PS2_Controller PS2 ( // communicates with the ps2 core
 	// Inputs
 	.CLOCK_50				(CLOCK_50),
 	.reset				(~KEY[0]),
