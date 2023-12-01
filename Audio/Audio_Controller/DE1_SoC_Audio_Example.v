@@ -104,7 +104,7 @@ always @(posedge CLOCK_50) begin
 	end  else delay_cnt <= delay_cnt + 1; 
 end
 
-reg [3:0] mif_data [0:3]; 
+reg [8:0] mif_data [0:3]; 
 reg [3:0] mif_adder;
 
 initial begin
@@ -123,9 +123,9 @@ end
  *                            Combinational Logic                            *
  *****************************************************************************/
 
-assign delay = {mif_audio_wire[3:0], 15'd3000};
+assign delay = mif_audio_wire[8:0];
 
-wire [31:0] sound = (!snd_enable || SW==0) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
+wire [31:0] sound = (!snd_enable) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
 
 
 assign read_audio_in			= audio_in_available & audio_out_allowed;
