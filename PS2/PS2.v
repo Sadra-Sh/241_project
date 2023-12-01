@@ -25,33 +25,21 @@ module controlpath (
     output keyVal3 [7:0]
 )
 
-    localparam start 
+    localparam start = 4'd0,
+    Wlow1 = 4'd1,
+    Whi1 = 4'd2,
+    getKey1 = 4'd3,
+    Wlow2 = 4'd4,
+    Whi2 = 4'd5,
+    getKey2 = 4'd6,
+    breakKey = 4'd7,
+    Wlow3 = 4'd8,
+    Whi3 = 4'd9,
+    getKey3 = 4'd10;
 
-    if clr = '1' then 
-         ps2c_filter <= (others => '0');
-         ps2d_filter <= (others => '0');
-         ps2cf <= '1';
-         ps2df <= '1';
 
-    elseif clk25'event and clk25 = '1' then
-        ps2c_filter (7) <= ps2c;
-        ps2c_filter (6 downto 0) <= ps2c_filter (7 downto 1);
-        ps2c_filter (7) <= ps2d;
-        ps2d_filter (6 downto 0) <= ps2d_filter (7 downto 1);
 
-    if ps2d_filter = X"FF" then 
-        ps2cf <= '0';
-    elseif ps2d_filter = X"00" then 
-        ps2cf <= '0';
-    end if;
 
-    if ps2d_filter = X"FF" then 
-        ps2df <= '1';
-    elseif ps2d_filter = X"00" then 
-        ps2df <= '0';
-    end if;
-
-    end if;
 endmodule 
 
 module shiftregister (
@@ -59,8 +47,9 @@ module shiftregister (
     input clear,
     input ps2_data, 
 
-    output reg [10:0] ps2D,
+    output reg [10:0] ps2D
     )
+    reg [10:0] shift;
 
     always@ (posedge CLOCK_50)begin 
         if (clear == 1'b1) begin
@@ -68,12 +57,8 @@ module shiftregister (
         end
 
         else begin
-            ps2D <= {ps2D, }
-
+            shift <= ps2D>>1;
+            ps2D <= {ps2_data, shift [9:0]};
         end
-
     end 
-
-
-
 endmodule 
