@@ -185,11 +185,11 @@ module rateDivider (
 	input reset,
 	output out_clock,
 )
-	reg [$clog2(CLOCK_FREQUENCY*4)-1, 0] downcount;
+	reg [$clog2(50000000*4)-1, 0] downcount;
 
 	always @(posedge clock) begin
 		if (reset || downcount == 28'd0) 
-			downcount = (CLOCK_FREQUENCY*0.1) - 1 //every 1/10 seconds
+			downcount = (50000000*0.1) - 1 //every 1/10 seconds
 
 		else begin
 			downcount <= downcount -1;
