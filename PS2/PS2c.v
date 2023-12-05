@@ -11,14 +11,15 @@ module PS2 (
 
 wire enable1, enable2, enable3;
 wire [10:0] shift1, shift2, shift3;
-wire [7:0] keyval1, keyval2, keyval3;
 wire [3:0] current;
 wire [3:0] bitcount;
 //wire speedClk
 
-controlpath control (SW[0], CLOCK_50, PS2_CLK, PS2_DAT, enable1, enable2, enable3, current, bitcount);
-Datapath datapath (SW[0], PS2_CLK, CLOCK_50, PS2_DAT, enable1, enable2, enable3, keyval1, keyval2, keyval3, shift1, shift2, shift3);
-
+controlpath control (SW[0], CLOCK_50, PS2_DAT, enable1, enable2, enable3, current, bitcount);
+Datapath datapath (SW[0], PS2_CLK, PS2_DAT, enable1, enable2, enable3, keyval1, keyval2, keyval3, shift1, shift2, shift3);
+hex u0 (keyval1, HEX0);
+hex u1(keyval2, HEX1);
+hex u2(keyval3, HEX2); 
 //ratediv ratediv (CLOCK_50, KEY[0], speedClk);
 //HEX_display hex_display (speedClk, keyval1, keyval2, keyval3, KEY[0]);
 
@@ -28,8 +29,7 @@ endmodule
 
 module controlpath (
     input clear,
-    input clock50,
-    input ps2Clk, //standard logic
+    input clock50, //standard logic
     input ps2Data, 
 
     output reg enable1,
@@ -54,7 +54,7 @@ module controlpath (
     getKey3 = 4'd9;
 
 
-    always @(posedge ps2Clk) begin
+    always @(posedge clock50) begin
 		if (clear == 1'b1) begin //active high SW[0] is 1
 			current_state <= start;
         end
@@ -63,7 +63,7 @@ module controlpath (
         end
 	end
     
-    always @(posedge clock50) begin
+    always @(*) begin
         case(current_state)
             start:
 				begin
@@ -76,7 +76,7 @@ module controlpath (
                 if (ps2Data == 1) begin
                     next_state = start;
 
-				end 
+					end 
                 else if (ps2Data == 0)
                     next_state = WaitLow1;
 				end
@@ -84,7 +84,7 @@ module controlpath (
             WaitLow1: 
 				begin
                 if (bitcount < 4'd11) begin
-                    if (ps2Clk == 0)
+                    if (clock50 == 0)
                         next_state = WaitHi1; 
                 end
       
@@ -95,7 +95,7 @@ module controlpath (
 
             WaitHi1:
 				begin
-                if (ps2Clk == 1'b1) begin
+                if (clock50 == 1'b1) begin
                     if (bitcount < 4'd11) begin
                         bitcount = bitcount + 1;
                     end
@@ -114,9 +114,9 @@ module controlpath (
             WaitLow2:
 				begin
                 if (bitcount < 4'd11) begin
-                    if (ps2Clk == 1) 
+                    if (clock50 == 1) 
                         next_state = WaitLow2;
-                    else if (ps2Clk == 0)
+                    else if (clock50 == 0)
                         next_state = WaitHi2;
                 end
             
@@ -127,7 +127,7 @@ module controlpath (
             WaitHi2:
 				begin
 
-                if (ps2Clk == 1'b1) begin
+                if (clock50 == 1'b1) begin
                     if (bitcount < 4'd11) begin
                         bitcount = bitcount + 1;
                     end
@@ -146,9 +146,9 @@ module controlpath (
             WaitLow3:
 				begin
                  if (bitcount < 11) begin
-                    if (ps2Clk == 1) 
+                    if (clock50 == 1) 
                     next_state = WaitLow3;
-                    else if (ps2Clk == 0)
+                    else if (clock50 == 0)
                         next_state = WaitHi3;
                  end
                 else if (bitcount == 4'd11)
@@ -158,7 +158,7 @@ module controlpath (
             WaitHi3: 
 				begin
 
-                if (ps2Clk == 1'b1) begin
+                if (clock50 == 1'b1) begin
                     if (bitcount < 4'd11) begin
                         bitcount = bitcount + 1;
                     end
@@ -182,10 +182,8 @@ endmodule
 module Datapath (
 
 	input reset,
-    input ps2Clk,
-	input CLOCK_50,
+	input ps2Clk,
 	input ps2Data,
-
 	input enable1, 
 	input enable2, 
 	input enable3,
@@ -198,34 +196,34 @@ module Datapath (
 	output reg [10:0] shift3
     );
 
+	reg [10:0] ps2data;
 
-
-	always @(negedge ps2Clk) begin
-        if (reset == 1'b1) begin
-            shift1 <= 11'b0;
-            shift2 <= 11'b0;
-            shift3 <= 11'b0;
-        end 
-        
-        else begin
-
-            if (enable1 == 1'b1) begin
-                shift1 = shift1 >> 1;
-                shift1 = {ps2Data, shift1[9:0]};
-            end 
-            
-            else if (enable2 == 1'b1) begin
-                shift2 = shift2 >> 1;
-                shift2 = {ps2Data, shift2[9:0]};
-            end 
-            
-            else if (enable3 == 1'b1) begin
-                shift3 = shift3 >> 1;
-                shift3 = {ps2Data, shift3[9:0]};
-            end
-        end
-    end
-
+	always @(negedge ps2Clk) begin	
+		ps2data <= ps2Data;
+		if (reset == 1'b1) begin
+			shift1 <= 11'b0;
+			shift2 <= 11'b0;
+			shift3 <= 11'b0;
+			
+		end
+		
+		if (enable1 == 1'b1) begin
+			ps2data <= ps2data >> 1;
+			shift1 <= {ps2data, shift1[9:0]};
+		end 
+		
+		else if (enable2 == 1'b1) begin 
+			ps2data <= ps2data >> 1;
+			shift2 <= {ps2data, shift2[9:0]};
+		end
+		
+		else if (enable3 == 1'b1) begin
+			ps2data <= ps2data >> 1;
+			shift3 <= {ps2data, shift3[9:0]};
+		end
+		
+	
+	end
 	
 	assign keyval1 = shift1 [8:1];
 	assign keyval2 = shift2 [8:1];
@@ -235,7 +233,7 @@ endmodule
 
 module hex (c, display);
 
- input [7:0] c;
+ input [3:0] c;
  output [6:0] display;
 
 assign display[0] = ~((~c[0]|c[1]|c[2]|c[3]) & (c[0]|c[1]|~c[2]|c[3]) & (~c[0]|~c[1]|c[2]|~c[3]) & (~c[0]|c[1]|~c[2]|~c[3]));
@@ -249,7 +247,7 @@ assign display[6] = ~((c[0]|c[1]|c[2]|c[3]) & (~c[0]|c[1]|c[2]|c[3]) & (~c[0]|~c
 endmodule
 
  
- 
+
 
 /* module HEX_display (
     input speedClk,

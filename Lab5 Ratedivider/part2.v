@@ -32,7 +32,7 @@ begin
         else if (Speed == 2'b10)
             downCount <= (CLOCK_FREQUENCY*2)-1;
         else if (Speed == 2'b11)
-            downCount <= (CLOCK_FREQUENCY*4)-1;
+            downCount <= (CLOCK_FREQUENCY*4)-1; 
     end
 
     else

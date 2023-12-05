@@ -1,4 +1,3 @@
-
 module DE1_SoC_Audio_Example (
 	// Inputs
 	CLOCK_50,
@@ -111,10 +110,22 @@ initial begin
 	$readmemb ("test.mif", mif_data);
 end
 
+reg [31:0] signal;
+reg [15:0] mem_addr;
+rom_audio r0 (.address(mem_addr), .clock(CLOCK_50), .q(delay)); 
+
 always @(posedge CLOCK_50)begin 
-	if (KEY[0]) mif_adder <= 0;
+	if (~KEY[0]) mem_addr <= 0;
 	else begin
-		mif_adder <= mif_adder + 1;
+		if (SW[0] == 1'b1)
+			mem_addr <= mem_addr + 1;
+	end
+end
+
+always @(posedge CLOCK_50)begin 
+	if (KEY[0]) mif_adder <= 0; 
+	else begin
+		mif_adder <= mif_adder + 1; 
 		mif_audio_wire <= mif_data[mif_adder];
 	end
 end 
@@ -123,7 +134,7 @@ end
  *                            Combinational Logic                            *
  *****************************************************************************/
 
-assign delay = mif_audio_wire[8:0];
+assign delay = {};
 
 wire [31:0] sound = (!snd_enable) ? 0 : snd ? 32'd10000000 : -32'd10000000; //the level of sound
 
