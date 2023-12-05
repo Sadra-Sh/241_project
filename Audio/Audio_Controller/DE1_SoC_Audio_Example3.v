@@ -70,11 +70,11 @@ wire [18:0] delay;
 
 reg snd;
 
-reg [22:0] beatCountMario;
+reg [22:0] beatCountMario; 
 reg [9:0] addressMario; 
 
-reg [13:0] addr_count;
-reg [10:0] clock_count;
+reg [13:0] addr_count; 
+reg [10:0] clock_count; 
 
 // State Machine Registers
 
