@@ -85,7 +85,7 @@ begin
          else
             next_state = set_x_wait;
       end   
-      set_x : next_state = load_x ? set_x : set_y_wait;
+      set_x : next_state = laad_x ? set_x : set_y_wait;
       set_y_wait : next_state = iplot ? set_y : set_y_wait;
       set_y :
       begin

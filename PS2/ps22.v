@@ -10,36 +10,31 @@ module PS2 (
 
 wire enable1, enable2, enable3;
 wire [10:0] shift1, shift2, shift3;
+wire [7:0] keyval1, keyval2, keyval3;
 wire [3:0] current;
 wire [3:0] bitcount;
-
 //wire speedClk
 
-controlpath control (SW[0], CLOCK_50, PS2_DAT, PS2_CLK, enable1, enable2, enable3, current, bitcount);
-Datapath datapath (SW[0], PS2_CLK, PS2_DAT, enable1, enable2, enable3, keyval1, keyval2, keyval3, shift1, shift2, shift3);
-HexDisplay u0 (CLOCK_50, keyval1, HEX0, HEX1);
+controlpath control (SW[0], CLOCK_50, PS2_CLK, PS2_DAT, keyval1);
+hex display (CLOCK_50, keyval1, HEX0, HEX1);
+
 //ratediv ratediv (CLOCK_50, KEY[0], speedClk);
 //HEX_display hex_display (speedClk, keyval1, keyval2, keyval3, KEY[0]);
 
-endmodule
+endmodule 
 
 
 
 module controlpath (
-    input clear,
-    input clock50, //standard logic
-    input ps2Data, 
-    input ps2Clk,
+    input [9:0] SW,
+    input CLOCK_50,
+    input PS2_CLK, //standard logic
+    input PS2_DAT, 
 
-    output reg enable1,
-    output reg enable2,
-    output reg enable3,
-    output reg [3:0] current_state,
-    output reg [3:0] bitcount
+    output reg [7:0] keyval1,
 );
 
     reg [3:0] next_state;
-    
 
 
     localparam start = 4'd0,
@@ -49,141 +44,156 @@ module controlpath (
     WaitLow2 = 4'd4,
     WaitHi2 = 4'd5,
     getKey2 = 4'd6,
-    WaitLow3 = 4'd7,
-    WaitHi3 = 4'd8,
-    getKey3 = 4'd9;
+    breakKey = 4'd7,
+    WaitLow3 = 4'd8,
+    WaitHi3 = 4'd9,
+    getKey3 = 4'd10;
 
-
-    always @(posedge clock50) begin
-		if (clear == 1'b1) begin //active high SW[0] is 1
-			current_state <= start;
+    always @(posedge CLOCK_50) begin
+		if (SW[0] == 1'b1) begin //active high SW[0] is 1
+			current_state = start;
+            bitcount <= 4'b0;
+            shift1 <= 11'b0;
+            shift2 <= 11'b0;
+            shift3 <= 11'b0;
+            keyval1 <= 8'b0;
+            keyval2 <= 8'b0;
+            keyval3 <= 8'b0;
         end
 		else begin
-			current_state <= next_state;
+			current_state = next_state;
         end
 	end
-    
-    always @(*) begin
+
+
+    always @(posedge CLOCK_50) begin
         case(current_state)
             start:
 				begin
-
                 bitcount <= 4'b0;
-                enable1 <= 1'b0;
-                enable2 <= 1'b0;
-                enable3 <= 1'b0;
-
-                if (ps2Data == 1) begin
+                if (PS2_DAT == 1) 
                     next_state = start;
-
-					end 
-                else if (ps2Data == 0)
+				 
+                else if (PS2_DAT == 0)
                     next_state = WaitLow1;
 				end
             
             WaitLow1: 
 				begin
                 if (bitcount < 4'd11) begin
-                    if (ps2Clk == 1) 
+                    if (PS2_CLK == 1)
                         next_state = WaitLow1;
                     else begin
                         next_state = WaitHi1; 
-                        enable1 <= 1;
+                        shift1 <= {PS2_DAT, shift1[10:1]};
                     end
-                end
-      
-                else if (bitcount == 4'd11) begin
-                    next_state = getKey1;
-                end 
-				end
 
+                end
+
+                else if (bitcount == 4'd11)
+                    next_state = getKey1;
+
+				end
 
             WaitHi1:
 				begin
-                next_state = WaitHi1;
-                if (ps2Clk == 1'b1) begin
-                    next_state = WaitLow1;
-                    if (bitcount < 4'd11) begin
-                        bitcount = bitcount + 1;
+                    next_state = WaitHi1;
+                    if (PS2_CLK == 1'b1) begin
+                        next_state = WaitLow1;
+                        if (bitcount < 4'd11)
+                            bitcount = bitcount + 1;
                     end
-                end
-                
 				end
 
             getKey1:
 				begin
+                keyval1 <= shift1[8:1];
                 bitcount = 4'b0;
-                enable1 = 1'b1;
                 next_state = WaitLow2;
 				end
             
             WaitLow2:
 				begin
                 if (bitcount < 4'd11) begin
-                    if (ps2Clk == 1) 
+                    if (PS2_CLK == 1)
                         next_state = WaitLow2;
                     else begin
                         next_state = WaitHi2; 
-                        enable2 <= 1;
+                        shift2 <= {PS2_DAT, shift2[10:1]};
                     end
+
                 end
-      
-                else if (bitcount == 4'd11) begin
+
+                else if (bitcount == 4'd11)
                     next_state = getKey2;
-                end 
 				end
+
             
             WaitHi2:
 				begin
-
-                next_state = WaitHi2;
-                if (ps2Clk == 1'b1) begin
+                if (PS2_CLK == 1'b0)
+                    next_state = WaitHi2;
+                else begin
                     next_state = WaitLow2;
-                    if (bitcount < 4'd11) begin
+                    if (bitcount < 4'd11)
                         bitcount = bitcount + 1;
-                    end
                 end
-
+                
 				end
 
             getKey2:
 				begin
-                enable2 = 1'b1;
-                bitcount = 4'b0;
+                keyval2 <= shift2[8:1];
+                bitcount<= 4'b0;
                 next_state = WaitLow3;
+            end
+
+            breakKey: 
+            begin
+                if (keyval2 == 8'hF0)
+                    next_state = WaitLow3;
+                else begin
+                    if (keyval2 == 8'hE0) 
+                        next_state = WaitLow1;
+                    else 
+                        next_state = WaitLow2;
+                end
+
             end
             
             WaitLow3:
 				begin
                 if (bitcount < 4'd11) begin
-                    if (ps2Clk == 1) 
+                    if (PS2_CLK == 1)
                         next_state = WaitLow3;
                     else begin
                         next_state = WaitHi3; 
-                        enable3 <= 1;
+                        shift3 <= {PS2_DAT, shift3[10:1]};
                     end
+
                 end
-      
-                else if (bitcount == 4'd11) begin
+
+                else if (bitcount == 4'd11)
                     next_state = getKey3;
-                end 
 				end
 				
             WaitHi3: 
 				begin
-                next_state = WaitHi3;
-                if (ps2Clk == 1'b1) begin
+
+              if (PS2_CLK == 1'b0)
+                    next_state = WaitHi3;
+                else begin
                     next_state = WaitLow3;
-                    if (bitcount < 4'd11) begin
+                    if (bitcount < 4'd11)
                         bitcount = bitcount + 1;
-                    end
                 end
                 
 				end
             
             getKey3: 
 				begin
-                enable3 = 1'b1;
+                keyval3 <= shift3 [8:1];
+                bitcount <= 4'b0;
                 next_state = start;
 				end
         
@@ -193,57 +203,7 @@ module controlpath (
 
 endmodule 
 
-module Datapath (
-
-	input reset,
-	input ps2Clk,
-	input ps2Data,
-	input enable1, 
-	input enable2, 
-	input enable3,
-	
-	output [7:0] keyval1,
-	output [7:0] keyval2,
-	output [7:0] keyval3,
-    output reg [10:0] shift1,
-	output reg [10:0] shift2,
-	output reg [10:0] shift3
-    );
-
-	reg [10:0] ps2data;
-
-	always @(negedge ps2Clk) begin	
-		ps2data <= ps2Data;
-		if (reset == 1'b1) begin
-			shift1 <= 11'b0;
-			shift2 <= 11'b0;
-			shift3 <= 11'b0;
-			
-		end
-		
-		if (enable1 == 1'b1) begin
-			shift1 <= {ps2data, shift1[10:1]};
-		end 
-		
-		else if (enable2 == 1'b1) begin 
-			shift2 <= {ps2data, shift2[9:0]};
-		end
-		
-		else if (enable3 == 1'b1) begin
-			shift3 <= {ps2data, shift3[9:0]};
-		end
-		
-	
-	end
-	
-	assign keyval1 = shift1 [8:1];
-	assign keyval2 = shift2 [8:1];
-	assign keyval3 = shift3 [8:1];
-
-endmodule
-
-module hex (
-
+module HexDisplay(
     input CLOCK_50,
     input [7:0] keyval,
     output [6:0] HEX0,
@@ -262,7 +222,7 @@ module hex (
     end
 
     // HEX decoder for common cathode 7-segment display
-    assign HEX0 = ~{
+    assign HEX0 = {
         (hex_value0 == 4'h0) ? 7'b1000000 :
         (hex_value0 == 4'h1) ? 7'b1111001 :
         (hex_value0 == 4'h2) ? 7'b0100100 :
@@ -281,7 +241,7 @@ module hex (
         (hex_value0 == 4'hF) ? 7'b0001110 : 7'b0000000
     };
 
-    assign HEX1 = ~{
+    assign HEX1 = {
         (hex_value1 == 4'h0) ? 7'b1000000 :
         (hex_value1 == 4'h1) ? 7'b1111001 :
         (hex_value1 == 4'h2) ? 7'b0100100 :
@@ -299,32 +259,5 @@ module hex (
         (hex_value1 == 4'hE) ? 7'b0000110 :
         (hex_value1 == 4'hF) ? 7'b0001110 : 7'b0000000
     };
+
 endmodule
-
- 
-
-
-/* module HEX_display (
-    input speedClk,
-    input [7:0] key1,
-    input [7:0] key2,
-    input [7:0] key3,
-    input reset,
-
-    output HEX0, HEX1, //for displaying speed
-    output HEX2//for displaying the gear
-)
-reg [6:0] speedcounter;
-reg [1:0] gear;
-
-always @(posedge speedClk) begin
-    if (key1 == 2'h1D) begin
-        speedcounter <= speedcounter + 1;
-        if (speedcounter )
-    end
-
-
-end
-
-
-endmodule */ 
