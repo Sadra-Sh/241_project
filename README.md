@@ -17,3 +17,5 @@ This digital systems project leverages the power of Cyclone-V FPGA to create an 
 - **Collaborative Teamwork:** Developed in collaboration with a partner, showcasing effective teamwork and coordination in achieving project goals.
 
 This repository serves as a comprehensive documentation of the technical intricacies involved in the development of the FPGA-based racing game. Feel free to explore the codebase and contribute to the advancement of this exciting project.
+
+<img width="451" alt="Screenshot 2024-02-04 at 11 30 48 AM" src="https://github.com/Sadra-Sh/241_project/assets/143111135/07090c20-3091-47c5-93cb-ac53f29dd8f1">
