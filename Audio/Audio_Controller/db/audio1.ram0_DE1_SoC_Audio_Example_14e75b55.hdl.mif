@@ -1,0 +1,15 @@
+-- begin_signature
+-- DE1_SoC_Audio_Example
+-- end_signature
+WIDTH=7;
+DEPTH=4;
+
+ADDRESS_RADIX=UNS;
+DATA_RADIX=BIN;
+
+CONTENT BEGIN
+	3 :	0001000;
+	2 :	0000100;
+	1 :	0000010;
+	0 :	0000001;
+END;
