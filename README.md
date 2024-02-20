@@ -4,7 +4,7 @@ This digital systems project leverages the power of Cyclone-V FPGA to create an 
 
 - **FPGA Integration:** Harnessing the capabilities of Cyclone-V FPGA to facilitate high-performance gaming functionalities.
 
-- **Peripheral Integration:** Seamlessly integrated a VGA display, PS2 keyboard with I2C communication protocol, on-chip memory for storing MIF files, and an audio module utilizing MIF files for precise audio signal transmission to speakers.
+- **Peripheral Integration:** Seamlessly integrated a VGA display, keybaord with PS2 communication protocol, on-chip memory for storing MIF files, and an audio module utilizing MIF files for precise audio signal transmission to speakers.
 
 - **Hex Display Implementation:** Implemented a hex display to dynamically showcase the speed of the in-game car, adding a crucial visual element to the gaming experience.
 
